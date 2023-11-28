@@ -8,6 +8,7 @@ from brevitas.export.handler import BaseHandler
 __all__ = [
     'Kernel1dApplHandlerMixin',
     'Kernel2dApplHandlerMixin',
+    'Kernel3dApplHandlerMixin',
     'ONNXBaseHandler'
 ]
 
@@ -78,6 +79,36 @@ class Kernel2dApplHandlerMixin(ABC):
         else:
             return list(module.kernel_size)
 
+class Kernel3dApplHandlerMixin(ABC): #need to understand these too, what are the shapes?
+
+    @staticmethod
+    def padding(module):
+        if isinstance(module.padding, int):
+            padding = [module.padding] * 4
+        else:
+            padding = list(module.padding) + list(module.padding)
+        return padding
+
+    @staticmethod
+    def stride(module):
+        if isinstance(module.stride, int):
+            return [module.stride] * 2
+        else:
+            return list(module.stride)
+
+    @staticmethod
+    def dilation(module):
+        if isinstance(module.dilation, int):
+            return [module.dilation] * 2
+        else:
+            return list(module.dilation)
+
+    @staticmethod
+    def kernel_shape(module):
+        if isinstance(module.kernel_size, int):
+            return [module.kernel_size] * 2
+        else:
+            return list(module.kernel_size)
 
 class ONNXBaseHandler(BaseHandler, ABC):
 

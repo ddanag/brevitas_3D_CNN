@@ -111,6 +111,7 @@ def _set_layer_export_handler(manager_cls, module: Module):
             and module.export_handler is None):
         handler = manager_cls.handler_from_module(module)
         if handler is None and module.requires_export_handler:
+            #import pdb; pdb.set_trace()
             raise RuntimeError(f"Module {module.__class__} not supported for export.")
         elif handler is None and not module.requires_export_handler:
             pass
@@ -214,6 +215,7 @@ class BaseManager(ABC):
 
     @classmethod
     def handler_from_module(cls, module: Module, no_inheritance=False):
+        
         for handler in cls.handlers:
             if no_inheritance:
                 if type(module) == handler.handled_layer:
@@ -221,6 +223,7 @@ class BaseManager(ABC):
             else:
                 if isinstance(module, handler.handled_layer):
                     return handler
+        #import pdb; pdb.set_trace()
         return None
 
     @classmethod

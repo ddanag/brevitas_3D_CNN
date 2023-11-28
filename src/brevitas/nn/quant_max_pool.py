@@ -38,14 +38,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Union
-
-from torch import Tensor
-from torch.nn import MaxPool1d, MaxPool2d
+from typing import Optional, Union, Type, Tuple
+import numpy as np
+from torch import Tensor, nn
+from torch.nn import MaxPool1d, MaxPool2d, MaxPool3d
+#from torch.nn import AdaptiveMaxPool3d
 
 from brevitas.quant_tensor import QuantTensor
 from .mixin.base import QuantLayerMixin
 
+###
+# Source: https://github.com/pytorch/pytorch/issues/42653
+class AdaptiveMaxPool3dCustom(nn.Module):
+    def __init__(self, output_size):
+        super(AdaptiveMaxPool3dCustom, self).__init__()
+        self.output_size = np.array(output_size)
+
+    def forward(self, x: Tensor):
+        #import pdb; pdb.set_trace()
+        stride_size = np.floor(np.array(x.shape[-3:]) / self.output_size).astype(np.int32)
+        kernel_size = np.array(x.shape[-3:]) - (self.output_size - 1) * stride_size
+        max = MaxPool3d(kernel_size=list(kernel_size), stride=list(stride_size))
+        x = max(x)
+        return x
+###
 
 class QuantMaxPool1d(QuantLayerMixin, MaxPool1d):
 
@@ -105,6 +121,85 @@ class QuantMaxPool2d(QuantLayerMixin, MaxPool2d):
             dilation=dilation,
             return_indices=return_indices,
             ceil_mode=ceil_mode)
+        QuantLayerMixin.__init__(
+            self,
+            return_quant_tensor=return_quant_tensor)
+
+    @property
+    def channelwise_separable(self) -> bool:
+        return True
+
+    @property
+    def requires_export_handler(self):
+        return False
+
+    def forward(self, input: Union[Tensor, QuantTensor]):
+        x = self.unpack_input(input)
+        if self.export_mode:
+            out = self.export_handler(x.value)
+            self._set_global_is_quant_layer(False)
+            return out
+        x = x.set(value=super().forward(x.value))
+        return self.pack_output(x)
+
+
+class QuantMaxPool3d(QuantLayerMixin, MaxPool3d):
+
+    def __init__(
+            self,
+            kernel_size,
+            stride=None,
+            padding=0,
+            dilation=1,
+            return_indices=False,
+            ceil_mode=False,
+            return_quant_tensor: bool = True):
+        MaxPool3d.__init__(
+            self,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            return_indices=return_indices,
+            ceil_mode=ceil_mode)
+        QuantLayerMixin.__init__(
+            self,
+            return_quant_tensor=return_quant_tensor)
+
+    @property
+    def channelwise_separable(self) -> bool:
+        return True
+
+    @property
+    def requires_export_handler(self):
+        return False
+
+    def forward(self, input: Union[Tensor, QuantTensor]):
+        x = self.unpack_input(input)
+        if self.export_mode:
+            out = self.export_handler(x.value)
+            self._set_global_is_quant_layer(False)
+            return out
+        x = x.set(value=super().forward(x.value))
+        return self.pack_output(x)
+
+
+class QuantAdaptiveMaxPool3d(QuantLayerMixin, AdaptiveMaxPool3dCustom):
+
+    # ONNX does not support AdaptiveMaxPool3D at this moment (Nov 2023),
+    # hence we define a AdaptiveMaxPool3DCustom which used MaxPool3D so
+    # can export this type of layer in ONNX as well.  
+
+    def __init__(
+            self,
+            output_size: Union[int, None, Tuple[int, int, int]],
+            return_indices=False,
+            return_quant_tensor: bool = True):
+        AdaptiveMaxPool3dCustom.__init__(
+            self,
+            output_size=output_size,
+            #return_indices=return_indices
+            )
         QuantLayerMixin.__init__(
             self,
             return_quant_tensor=return_quant_tensor)

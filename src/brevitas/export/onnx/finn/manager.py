@@ -12,12 +12,12 @@ from brevitas.quant_tensor import QuantTensor
 
 from .transform import move_quant_attributes_into_annotations
 from .transform import restore_domain
-from .handler.parameter import FINNQuantConv2dHandler, FINNQuantLinearHandler
+from .handler.parameter import FINNQuantConv3dHandler, FINNQuantConv2dHandler, FINNQuantLinearHandler
 from .handler.parameter import FINNQuantConv1dHandler
 from .handler.act import FINNQuantHardTanhHandler, FINNQuantReLUHandler, FINNQuantIdentityHandler
-from .handler.acc import FINNQuantAvgPool2dHandler
+from .handler.acc import FINNQuantAvgPool2dHandler, FINNQuantAvgPool3dHandler
 from .utils import finn_datatype
-from .function.acc import QuantAvgPool2dFn
+from .function.acc import QuantAvgPool2dFn, QuantAvgPool3dFn
 from .function.act import QuantHardTanhFn, QuantReLUFn
 from .function.parameter import QuantizedLinearFn, QuantizedConvNdFn
 
@@ -75,10 +75,12 @@ class FINNManager(ONNXBaseManager):
         FINNQuantLinearHandler,
         FINNQuantConv1dHandler,
         FINNQuantConv2dHandler,
+        FINNQuantConv3dHandler,
         FINNQuantReLUHandler,
         FINNQuantIdentityHandler,
         FINNQuantHardTanhHandler,
-        FINNQuantAvgPool2dHandler]
+        FINNQuantAvgPool2dHandler,
+        FINNQuantAvgPool3dHandler]
 
     custom_fns = [
         DebugMarkerFunction,

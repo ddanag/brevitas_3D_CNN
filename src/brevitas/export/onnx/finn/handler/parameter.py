@@ -4,15 +4,15 @@ from typing import Optional, Union
 import torch
 from torch import Tensor
 
-from brevitas.nn import QuantLinear, QuantConv2d, QuantConv1d
+from brevitas.nn import QuantLinear, QuantConv3d, QuantConv2d, QuantConv1d
 from brevitas.nn.quant_layer import QuantWeightBiasInputOutputLayer as QuantWBIOL
-from brevitas.export.onnx.handler import Kernel2dApplHandlerMixin, Kernel1dApplHandlerMixin
+from brevitas.export.onnx.handler import Kernel3dApplHandlerMixin, Kernel2dApplHandlerMixin, Kernel1dApplHandlerMixin
 from .base import FINNQuantIOHandler
 from ..function.parameter import QuantizedLinearFn
 from ..function.parameter import QuantizedConvNdFn
 from ..utils import finn_datatype
 
-QuantConvNd = Union[QuantConv1d, QuantConv2d]
+QuantConvNd = Union[QuantConv1d, QuantConv2d, QuantConv3d]
 
 
 class FINNQuantWBIOLHandler(FINNQuantIOHandler, ABC):
@@ -165,4 +165,14 @@ class FINNQuantConv2dHandler(FINNQuantConvNdHandler, Kernel2dApplHandlerMixin):
         quant_weight_scale = module.quant_weight_scale().type(torch.FloatTensor).detach()
         if len(quant_weight_scale.shape) == 4:
             quant_weight_scale = quant_weight_scale.view(1, -1, 1, 1)
+        return quant_weight_scale
+    
+class FINNQuantConv3dHandler(FINNQuantConvNdHandler, Kernel3dApplHandlerMixin):
+    handled_layer = QuantConv3d
+
+    @staticmethod
+    def quant_weight_scale(module: QuantConv3d):
+        quant_weight_scale = module.quant_weight_scale().type(torch.FloatTensor).detach()
+        if len(quant_weight_scale.shape) == 4:
+            quant_weight_scale = quant_weight_scale.view(1, -1, 1, 1) #need to figure out these
         return quant_weight_scale
